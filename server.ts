@@ -1025,7 +1025,7 @@ Retorne APENAS um JSON puro que atenda ao esquema acima. Não use markdown \`\`\
 });
 
 // START EXPRESS + VITE DEV / PRODUCTION FLOW
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 async function startServer() {
   // If we are not in web production, mount Vite development pipeline

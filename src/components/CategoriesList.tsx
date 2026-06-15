@@ -104,7 +104,7 @@ export default function CategoriesList({ raceState, onSelectHeat, selectedHeatId
           <h2 className="text-base font-bold text-slate-100 font-sans">Menu de Categorias (BEM)</h2>
         </div>
 
-        <div className="space-y-1.5 flex flex-col">
+        <div className="space-y-1.5 flex flex-row lg:flex-col overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 scrollbar-thin gap-2">
           {categories.map((cat) => {
             const count = riders.filter(r => r.category === cat).length;
             const isActive = selectedCategory === cat;
@@ -115,18 +115,18 @@ export default function CategoriesList({ raceState, onSelectHeat, selectedHeatId
                   setSelectedCategory(cat);
                   setSearchQuery('');
                 }}
-                className={`w-full text-left px-4 py-3 rounded-lg flex items-center justify-between transition-all ${
+                className={`flex-shrink-0 lg:w-full text-left px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-lg flex items-center justify-between transition-all gap-4 ${
                   isActive 
                     ? 'bg-[#01804E] font-bold text-white shadow-md shadow-emerald-950/40 border-l-4 border-[#FEDD00]' 
                     : 'bg-slate-950/65 text-slate-300 hover:bg-slate-800 border-l-4 border-transparent'
                 }`}
               >
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2.5 sm:space-x-3">
                   <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-[#FEDD00]' : 'bg-slate-500'}`} />
-                  <span className="text-sm tracking-tight">{cat}</span>
+                  <span className="text-xs sm:text-sm tracking-tight whitespace-nowrap">{cat}</span>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${isActive ? 'bg-[#034423] text-emerald-200' : 'bg-slate-800 text-slate-400'}`}>
-                  {count} Pilotos
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${isActive ? 'bg-[#034423] text-emerald-200' : 'bg-slate-800 text-slate-400'}`}>
+                  {count} <span className="hidden sm:inline">Pilotos</span><span className="sm:hidden">P.</span>
                 </span>
               </button>
             );
@@ -201,18 +201,18 @@ export default function CategoriesList({ raceState, onSelectHeat, selectedHeatId
                 </p>
               </div>
 
-              <div className="overflow-x-auto rounded-lg border border-slate-950">
-                <table className="w-full text-left text-xs font-mono">
+              <div className="overflow-x-auto rounded-lg border border-slate-950 scrollbar-thin">
+                <table className="w-full text-left text-xs font-mono min-w-[500px] sm:min-w-0">
                   <thead>
                     <tr className="bg-slate-950/70 text-slate-400 border-b border-slate-800 font-medium uppercase text-[10px]">
-                      <th className="py-3 px-4">Ranque</th>
+                      <th className="py-3 px-3 sm:px-4">Ranque</th>
                       <th className="py-3">Placa</th>
-                      <th className="py-3">Piloto</th>
-                      <th className="py-3">Clube / Origem</th>
-                      <th className="py-3 text-center">Moto 1</th>
-                      <th className="py-3 text-center">Moto 2</th>
-                      <th className="py-3 text-center">Moto 3</th>
-                      <th className="py-3 text-right pr-4">Total Pts</th>
+                      <th className="py-3 text-left">Piloto</th>
+                      <th className="py-3 hidden md:table-cell font-sans">Clube / Origem</th>
+                      <th className="py-3 text-center"><span className="hidden sm:inline">Moto </span>1</th>
+                      <th className="py-3 text-center"><span className="hidden sm:inline">Moto </span>2</th>
+                      <th className="py-3 text-center"><span className="hidden sm:inline">Moto </span>3</th>
+                      <th className="py-3 text-right pr-4"><span className="hidden sm:inline">Total Pts</span><span className="sm:hidden">Total</span></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -224,7 +224,7 @@ export default function CategoriesList({ raceState, onSelectHeat, selectedHeatId
                              key={rider.id}
                              className="border-b border-slate-950/45 hover:bg-slate-950/20 text-slate-300 transition-colors"
                            >
-                             <td className="py-3.5 px-4 font-bold">
+                             <td className="py-3 px-3 sm:px-4 font-bold">
                                {isPodium ? (
                                  <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full font-bold text-[10px] ${
                                    index === 0 ? 'bg-amber-500 text-black shadow shadow-amber-500/10' : 
@@ -237,13 +237,13 @@ export default function CategoriesList({ raceState, onSelectHeat, selectedHeatId
                                  <span className="text-slate-500 pl-1.5">{index + 1}</span>
                                )}
                              </td>
-                             <td className="py-3.5 font-bold text-yellow-500">#{rider.plate}</td>
-                             <td className="py-3.5 font-bold text-slate-100">{rider.name}</td>
-                             <td className="py-3.5 text-slate-450">{rider.club}</td>
-                             <td className="py-3.5 text-center text-slate-400 font-semibold">{rider.points[0] ?? '-'} pt</td>
-                             <td className="py-3.5 text-center text-slate-400 font-semibold">{rider.points[1] ?? '-'} pt</td>
-                             <td className="py-3.5 text-center text-slate-400 font-semibold">{rider.points[2] ?? '-'} pt</td>
-                             <td className="py-3.5 text-right font-black text-slate-100 pr-4">{rider.totalPoints} pt</td>
+                             <td className="py-3 font-bold text-yellow-500">#{rider.plate}</td>
+                             <td className="py-3 font-bold text-slate-100 pr-2 truncate max-w-[120px] sm:max-w-none">{rider.name}</td>
+                             <td className="py-3 hidden md:table-cell text-slate-450 font-sans">{rider.club}</td>
+                             <td className="py-3 text-center text-slate-400 font-semibold">{rider.points[0] ?? '-'} pt</td>
+                             <td className="py-3 text-center text-slate-400 font-semibold">{rider.points[1] ?? '-'} pt</td>
+                             <td className="py-3 text-center text-slate-400 font-semibold">{rider.points[2] ?? '-'} pt</td>
+                             <td className="py-3 text-right font-black text-slate-100 pr-4">{rider.totalPoints} pt</td>
                            </tr>
                         );
                       })

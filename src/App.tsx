@@ -170,11 +170,11 @@ export default function App() {
       </header>
 
       {/* Operator control floating bar or configuration badge */}
-      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-4 flex items-center justify-between">
-        <span className="text-[10px] text-slate-400 font-mono bg-slate-900 px-2.5 py-1 rounded border border-slate-800">
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <span className="text-[10px] text-slate-400 font-mono bg-slate-900 px-2.5 py-1.5 rounded border border-slate-800 w-full sm:w-auto text-center sm:text-left">
           OPERANDO VIA SISTEMA BEM DE BICICROSS
         </span>
-        <div className="flex items-center space-x-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 pointer-events-auto">
+        <div className="flex items-center justify-between sm:justify-start space-x-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 pointer-events-auto w-full sm:w-auto">
           <span className="text-[10px] text-slate-400 font-bold font-sans">Modo Operador / Lançamento</span>
           <button
             onClick={() => setIsAdminMode(prev => !prev)}

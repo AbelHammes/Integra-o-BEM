@@ -366,10 +366,10 @@ export default function LiveTracker({ raceState, onRefresh, isAdminMode }: LiveT
               </div>
 
               {/* Checkered flag finish graphics */}
-              <div className="border-t border-slate-900 pt-3 flex justify-between items-center text-xs text-slate-500">
+              <div className="border-t border-slate-900 pt-3 flex flex-wrap justify-between items-center text-[10px] sm:text-xs text-slate-500 gap-1.5 sm:gap-0">
                 <span className="flex items-center space-x-1"><Flag className="h-3 w-3 text-slate-500" /> <span>Portão</span></span>
                 <span className="flex items-center space-x-1"><span>Curva 1</span></span>
-                <span className="flex items-center space-x-1"><span>Pro-Section</span></span>
+                <span className="flex items-center space-x-1 hidden sm:flex"><span>Pro-Section</span></span>
                 <span className="flex items-center space-x-1"><span>Curva 3</span></span>
                 <span className="flex items-center space-x-1 text-slate-400 font-bold"><Flag className="h-3.5 w-3.5 text-white" /> <span>Chegada</span></span>
               </div>
@@ -395,15 +395,15 @@ export default function LiveTracker({ raceState, onRefresh, isAdminMode }: LiveT
               </div>
 
               {/* Rank results */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+              <div className="overflow-x-auto scrollbar-thin">
+                <table className="w-full text-left text-[11px] sm:text-xs min-w-[480px] sm:min-w-0">
                   <thead>
-                    <tr className="text-slate-500 uppercase font-mono border-b border-slate-900">
+                    <tr className="text-slate-500 uppercase font-mono border-b border-slate-900 text-[10px]">
                       <th className="py-2 px-3">Class.</th>
                       <th className="py-2">Placa</th>
                       <th className="py-2">Piloto</th>
                       <th className="py-2 hidden md:table-cell">Clube / Origem</th>
-                      <th className="py-2">Raia</th>
+                      <th className="py-2 hidden sm:table-cell">Raia</th>
                       <th className="py-2 text-right">Tempo Oficial</th>
                       <th className="py-2 text-right">Pontos</th>
                     </tr>
@@ -421,7 +421,7 @@ export default function LiveTracker({ raceState, onRefresh, isAdminMode }: LiveT
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: idx * 0.05 }}
-                            className="border-b border-slate-900 hover:bg-slate-900/40 text-slate-300 font-mono"
+                            className="border-b border-slate-900 hover:bg-slate-900/40 text-slate-300 font-mono text-[11px] sm:text-xs"
                           >
                             <td className="py-3 px-3 font-bold">
                               <div className="flex items-center space-x-1.5">
@@ -441,7 +441,7 @@ export default function LiveTracker({ raceState, onRefresh, isAdminMode }: LiveT
                               {assignment.riderName}
                             </td>
                             <td className="py-3 hidden md:table-cell text-slate-400">{riderFull?.club || 'Piloto Importado'}</td>
-                            <td className="py-3 text-slate-400">Raia {assignment.gate}</td>
+                            <td className="py-3 hidden sm:table-cell text-slate-400">Raia {assignment.gate}</td>
                             <td className="py-3 text-right text-emerald-400 font-bold">{assignment.time || '--'}</td>
                             <td className="py-3 text-right font-bold text-slate-200">{assignment.motoPoints || assignment.finishPosition || '-'} pt</td>
                           </motion.tr>
