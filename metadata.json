@@ -1,0 +1,6 @@
+{
+  "name": "BMX Live - Sistema BEM",
+  "description": "Painel de resultados ao vivo e telemetria de Bicicross integrado ao SISTEMA BEM de BMX.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
