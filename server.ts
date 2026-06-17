@@ -40,7 +40,7 @@ function getGemini(): GoogleGenAI {
 // Full, realistic INITIAL Mock database of Brazilian BMX (Bicicross) Championship
 const DEFAULT_RACE_STATE: RaceState = {
   eventName: "Campeonato Brasileiro de BMX 2026",
-  location: "Cuiaba / MS",
+  location: "Cuiabá - MT",
   date: "04 e 05 Julho de 2026",
   categories: ["Elite Men", "Elite Women", "Junior Men", "Cruiser 30-39"],
   riders: [
