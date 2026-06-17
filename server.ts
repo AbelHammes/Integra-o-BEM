@@ -403,6 +403,44 @@ app.post('/api/race/submit-live-results', checkApiKey, (req, res) => {
   res.json({ success: true, heat, live: currentRaceState.live });
 });
 
+// Helper to safely extract HTML tag contents without index-based catastrophic backtracking or CPU blocks
+function extractTagContentByTagName(html: string, tagName: string): { content: string }[] {
+  const results: { content: string }[] = [];
+  const lowerHtml = html.toLowerCase();
+  const openTagPrefix = `<${tagName.toLowerCase()}`;
+  const closeTag = `</${tagName.toLowerCase()}>`;
+  
+  let pos = 0;
+  while (true) {
+    const idx = lowerHtml.indexOf(openTagPrefix, pos);
+    if (idx === -1) break;
+    
+    // Ensure accurate tag start
+    const nextChar = lowerHtml[idx + openTagPrefix.length];
+    if (nextChar !== undefined && nextChar !== ' ' && nextChar !== '>' && nextChar !== '\r' && nextChar !== '\n' && nextChar !== '\t') {
+      pos = idx + openTagPrefix.length;
+      continue;
+    }
+    
+    // Find open tag closing bracket
+    const openCloseIdx = lowerHtml.indexOf('>', idx);
+    if (openCloseIdx === -1) break;
+    
+    // Find close tag
+    const endIdx = lowerHtml.indexOf(closeTag, openCloseIdx);
+    if (endIdx === -1) {
+      pos = openCloseIdx + 1;
+      continue;
+    }
+    
+    const content = html.substring(openCloseIdx + 1, endIdx);
+    results.push({ content });
+    
+    pos = endIdx + closeTag.length;
+  }
+  return results;
+}
+
 // Helper function to extract and parse BEM exported HTML tables directly, bypassing Gemini for flawless local processing
 function parseBemHtml(html: string): any {
   const lower = html.toLowerCase();
@@ -412,13 +450,13 @@ function parseBemHtml(html: string): any {
 
   // Event Name
   let eventName = "";
-  const h1Match = html.match(/<H1[^>]*>([\s\S]*?)<\/H1>/i);
-  if (h1Match) {
-    eventName = h1Match[1].replace(/<[^>]*>/g, '').trim();
+  const h1Content = extractTagContentByTagName(html, 'h1');
+  if (h1Content.length > 0) {
+    eventName = h1Content[0].content.replace(/<[^>]*>/g, '').trim();
   }
-  const h2Match = html.match(/<H2[^>]*>([\s\S]*?)<\/H2>/i);
-  if (h2Match) {
-    eventName += (eventName ? " - " : "") + h2Match[1].replace(/<[^>]*>/g, '').trim();
+  const h2Content = extractTagContentByTagName(html, 'h2');
+  if (h2Content.length > 0) {
+    eventName += (eventName ? " - " : "") + h2Content[0].content.replace(/<[^>]*>/g, '').trim();
   }
   if (!eventName) {
     eventName = "Campeonato BEM Importado";
@@ -435,28 +473,26 @@ function parseBemHtml(html: string): any {
   const heatsList: any[] = [];
   const categoriesList: string[] = [];
 
-  // Match all tables
-  const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
-  let tableMatch;
-
-  while ((tableMatch = tableRegex.exec(html)) !== null) {
-    const tableContent = tableMatch[1];
+  const tables = extractTagContentByTagName(html, 'table');
+  for (const table of tables) {
+    const tableContent = table.content;
     
     // Caption containing category
-    const captionMatch = tableContent.match(/<caption[^>]*>([\s\S]*?)<\/caption>/i);
-    if (!captionMatch) continue;
-
-    const rawCategory = captionMatch[1].replace(/<[^>]*>/g, '').trim();
-    const category = rawCategory.replace(/\s*\(\d+\s*Riders\)/i, '').trim();
-    if (!category) continue;
+    const captions = extractTagContentByTagName(tableContent, 'caption');
+    let category = "";
+    if (captions.length > 0) {
+      const rawCategory = captions[0].content.replace(/<[^>]*>/g, '').trim();
+      category = rawCategory.replace(/\s*\(\d+\s*Riders\)/i, '').trim();
+    }
+    
+    if (!category) {
+      // Look for any potential column name in cells or first row or make default
+      category = "BEM Categoria Geral";
+    }
 
     if (!categoriesList.includes(category)) {
       categoriesList.push(category);
     }
-
-    // Capture each row inside the tbody or table
-    const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-    let trMatch;
 
     interface RiderExtract {
       id: string;
@@ -475,20 +511,16 @@ function parseBemHtml(html: string): any {
     }
 
     const tableRiders: RiderExtract[] = [];
+    const rows = extractTagContentByTagName(tableContent, 'tr');
 
-    while ((trMatch = trRegex.exec(tableContent)) !== null) {
-      const rowContent = trMatch[1];
+    for (const row of rows) {
+      const rowContent = row.content;
       if (rowContent.toLowerCase().includes('<th')) continue; // Skip headers
 
-      // Parse TD columns
-      const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-      let tdMatch;
-      const tds: string[] = [];
-      while ((tdMatch = tdRegex.exec(rowContent)) !== null) {
-        tds.push(tdMatch[1]);
-      }
+      const cells = extractTagContentByTagName(rowContent, 'td');
+      if (cells.length < 3) continue; // Invalid row
 
-      if (tds.length < 3) continue; // Invalid row
+      const tds = cells.map(c => c.content);
 
       // Column 0: Plate
       const plate = tds[0].replace(/<[^>]*>/g, '').trim();
@@ -498,14 +530,13 @@ function parseBemHtml(html: string): any {
       const club = tds[1].replace(/<[^>]*>/g, '').trim();
 
       // Column 2: Name
-      // Extract from span style 125% or just general text
       let name = tds[2].replace(/<span[^>]*>([\s\S]*?)<\/span>/i, '$1');
       name = name.replace(/<[^>]*>/g, ' ').trim();
-      // Remove license small text like (100 637 693 96)
+      // Remove license codes e.g. (100...)
       name = name.replace(/\s*\(\s*\d[\d\s]*\)\s*/g, '').trim();
       name = name.replace(/\s+/g, ' ').trim();
 
-      // Column 3: Final (e.g. <b>1st</b><BR>38.403<BR>{2.530})
+      // Column 3: Final
       let finalPos: number | undefined;
       let finalTime: string | undefined;
       if (tds[3] && tds[3].trim()) {
@@ -525,14 +556,14 @@ function parseBemHtml(html: string): any {
         }
       }
 
-      // Column 5: M-PTS Total
+      // Column 5: total points
       let totalPoints = 0;
       if (tds[5]) {
         const val = parseInt(tds[5].replace(/<[^>]*>/g, '').trim(), 10);
         if (!isNaN(val)) totalPoints = val;
       }
 
-      // Parse Motos Helper
+      // Convert individual Moto columns
       const parseMotoColumn = (colText: string | undefined) => {
         if (!colText) return undefined;
         const text = colText.replace(/<[^>]*>/g, ' ').trim().toUpperCase();
@@ -594,7 +625,9 @@ function parseBemHtml(html: string): any {
       });
     }
 
-    // Now set accurate rank
+    if (tableRiders.length === 0) continue;
+
+    // Rank of the table
     tableRiders.sort((a, b) => a.totalPoints - b.totalPoints);
     tableRiders.forEach((r, idx) => {
       r.rank = idx + 1;
@@ -689,7 +722,13 @@ function parseBemHtml(html: string): any {
 
 // Helper function for smart local BMX text parsing fallback when Gemini is busy or offline
 function fallbackParseBMXText(textContent: string, parseType: 'RIDERS' | 'RESULTS'): any {
-  const lines = textContent.split('\n');
+  // If text is HTML or has HTML tags, strip them first safely to keep line parsing simple, fast, and secure
+  let text = textContent;
+  if (text.toLowerCase().includes('<table') || text.toLowerCase().includes('<tr') || text.includes('</')) {
+    text = text.replace(/<[^>]*>/g, ' ');
+  }
+
+  const lines = text.split('\n');
   
   if (parseType === 'RIDERS') {
     const riders: any[] = [];
@@ -699,37 +738,51 @@ function fallbackParseBMXText(textContent: string, parseType: 'RIDERS' | 'RESULT
       line = line.trim();
       if (!line) continue;
       
-      // Look for Category headers
+      // Category detection
       const catMatch = line.match(/(?:CATEGORIA|CATEGORY|CLASS):\s*([^\n\|-]+)/i);
       if (catMatch) {
         currentCategory = catMatch[1].trim();
         continue;
       }
       
-      // Look for rider lines e.g.: "1. #22 Bruno Cogo - Americana Bicicross (SP)"
-      // Or "1 | 22 | Bruno Cogo | Americana"
-      const riderMatch = line.match(/(?:(\d+)\.?\s*)?#?(\d+)\s+([^-\|]+)\s*[-\|]?\s*([^\n]+)?/i);
-      
-      if (riderMatch) {
-        const plate = riderMatch[2].trim();
-        const name = riderMatch[3].trim();
-        const club = riderMatch[4] ? riderMatch[4].trim() : 'Clube Individual';
-        
-        if (plate && isNaN(Number(plate)) === false && name.length > 2) {
-          riders.push({
-            name,
-            plate,
-            category: currentCategory,
-            club
-          });
-        }
-      } else {
-        const parts = line.split('|').map(p => p.trim());
+      // Safe, backtrack-free programmatic parser for rider lines
+      // Let's strip numbering from the beginning like "1. ", "02 -", "12 |"
+      const cleanLine = line.replace(/^\s*\d+[\s\.\-\)|]+\s*/, '').trim();
+      if (!cleanLine) continue;
+
+      // Handle custom CSV/Pipe formats
+      if (cleanLine.includes('|')) {
+        const parts = cleanLine.split('|').map(p => p.trim());
         if (parts.length >= 2) {
           const name = parts[0];
-          const plate = parts[1].replace('#', '');
+          const plate = parts[1].replace('#', '').trim();
           const club = parts[2] || 'Clube Individual';
-          if (name.length > 2 && isNaN(Number(plate)) === false) {
+          if (name.length > 2 && /^\d+$/.test(plate)) {
+            riders.push({
+              name,
+              plate,
+              category: currentCategory,
+              club
+            });
+          }
+        }
+        continue;
+      }
+
+      // Handle simple space separated words e.g. "22 Bruno Cogo Americana"
+      const parts = cleanLine.split(/\s+/);
+      if (parts.length >= 2) {
+        const firstPart = parts[0].replace('#', '').trim();
+        if (/^\d+$/.test(firstPart)) {
+          const plate = firstPart;
+          const remainingText = parts.slice(1).join(' ');
+          
+          // Separate name and club by dash or comma
+          const separatorMatch = remainingText.split(/[-\(,]/);
+          const name = separatorMatch[0].trim();
+          const club = separatorMatch[1] ? separatorMatch[1].replace(/[\)\s]+/g, ' ').trim() : 'Clube Individual';
+          
+          if (name.length > 2) {
             riders.push({
               name,
               plate,
@@ -755,6 +808,7 @@ function fallbackParseBMXText(textContent: string, parseType: 'RIDERS' | 'RESULT
       const catMatch = line.match(/(?:CATEGORIA|CATEGORY):\s*([^\n\|]+)/i);
       if (catMatch) {
         category = catMatch[1].trim();
+        continue;
       }
       
       const roundMatch = line.match(/(?:ROUND|RODADA|FASE):\s*([A-Za-z0-0_]+)/i);
@@ -765,19 +819,23 @@ function fallbackParseBMXText(textContent: string, parseType: 'RIDERS' | 'RESULT
         else if (val.includes('MOTO_3') || val.includes('MOTO3')) round = 'MOTO_3';
         else if (val.includes('SEMI')) round = 'SEMI';
         else if (val.includes('FINAL')) round = 'FINAL';
+        continue;
       } else {
-        if (line.toUpperCase().includes('MOTO_1') || line.toUpperCase().includes('MOTO 1')) round = 'MOTO_1';
-        if (line.toUpperCase().includes('MOTO_2') || line.toUpperCase().includes('MOTO 2')) round = 'MOTO_2';
-        if (line.toUpperCase().includes('MOTO_3') || line.toUpperCase().includes('MOTO 3')) round = 'MOTO_3';
-        if (line.toUpperCase().includes('FINAL')) round = 'FINAL';
-        if (line.toUpperCase().includes('SEMI')) round = 'SEMI';
+        const upper = line.toUpperCase();
+        if (upper.includes('MOTO_1') || upper.includes('MOTO 1')) round = 'MOTO_1';
+        if (upper.includes('MOTO_2') || upper.includes('MOTO 2')) round = 'MOTO_2';
+        if (upper.includes('MOTO_3') || upper.includes('MOTO 3')) round = 'MOTO_3';
+        if (upper.includes('FINAL')) round = 'FINAL';
+        if (upper.includes('SEMI')) round = 'SEMI';
       }
       
       const heatMatch = line.match(/(?:BAT|BATERIA|HEAT):\s*(\d+)/i);
       if (heatMatch) {
         heatNumber = parseInt(heatMatch[1], 10);
+        continue;
       }
       
+      // Parse results line by splitting by | or spaces manually and safely
       if (line.includes('|')) {
         const parts = line.split('|').map(p => p.trim());
         if (parts.length >= 3) {
@@ -796,7 +854,7 @@ function fallbackParseBMXText(textContent: string, parseType: 'RIDERS' | 'RESULT
             if (!time.endsWith('s') && !isNaN(Number(time))) time += 's';
           }
           
-          if (!isNaN(pos) && plate && isNaN(Number(plate)) === false) {
+          if (!isNaN(pos) && plate && /^\d+$/.test(plate)) {
             results.push({
               plate,
               name,
@@ -807,15 +865,27 @@ function fallbackParseBMXText(textContent: string, parseType: 'RIDERS' | 'RESULT
           }
         }
       } else {
-        const rMatch = line.match(/^(\d+)[\|\s]+([#\d]+)[\|\s]+([A-Za-zÀ-ÖØ-öø-ÿ\s]+?)[\|\s]+(\d+)?(?:[\|\s]+([0-9\:\.s]+))?$/i);
-        if (rMatch) {
-          const pos = parseInt(rMatch[1], 10);
-          const plate = rMatch[2].replace('#', '').trim();
-          const name = rMatch[3].trim();
-          const gate = rMatch[4] ? parseInt(rMatch[4], 10) : 1;
-          const time = rMatch[5] || '33.000s';
+        // Space separation: pos plate name [gate] [time]
+        const parts = line.split(/\s+/);
+        if (parts.length >= 3) {
+          const pos = parseInt(parts[0], 10);
+          const plate = parts[1].replace('#', '').trim();
+          const name = parts[2];
           
-          if (!isNaN(pos) && plate && isNaN(Number(plate)) === false) {
+          if (!isNaN(pos) && /^\d+$/.test(plate) && name.length > 2) {
+            let gate = 1;
+            let time = '33.000s';
+            if (parts.length >= 4) {
+              const val = parts[3];
+              if (/^\d$/.test(val)) gate = parseInt(val, 10);
+            }
+            if (parts.length >= 5) {
+              const val = parts[4];
+              if (/\d+\.\d+/.test(val)) {
+                time = val;
+                if (!time.endsWith('s')) time += 's';
+              }
+            }
             results.push({
               plate,
               name,
