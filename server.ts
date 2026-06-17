@@ -38,9 +38,9 @@ function getGemini(): GoogleGenAI {
 
 // Full, realistic INITIAL Mock database of Brazilian BMX (Bicicross) Championship
 const DEFAULT_RACE_STATE: RaceState = {
-  eventName: "Grande Prêmio de Bicicross Brasil 2026",
-  location: "Pista de Bicicross de Americana, SP",
-  date: "12 de Junho de 2026",
+  eventName: "Campeonato Brasileiro de BMX 2026",
+  location: "Cuiaba / MS",
+  date: "04 e 05 Julho de 2026",
   categories: ["Elite Men", "Elite Women", "Junior Men", "Cruiser 30-39"],
   riders: [
     // Elite Men
@@ -277,13 +277,28 @@ function recalculateRankings() {
 }
 
 // REST API DEFINITIONS
+const checkApiKey = (req: any, res: any, next: any) => {
+  const secret = process.env.API_KEY;
+  if (!secret) {
+    return next(); // API key not set in environment (e.g., local dev), allow write access
+  }
+  
+  const clientKey = req.headers['x-api-key'] || req.headers['x-api-token'] || (req.headers['authorization'] as string)?.replace(/^Bearer\s+/i, '');
+  
+  if (clientKey === secret) {
+    return next();
+  }
+  
+  return res.status(401).json({ error: "Chave de acesso (API Key) não fornecida ou incorreta para esta operação." });
+};
+
 // 1. Get entire current BMX state
 app.get('/api/race/state', (req, res) => {
   res.json(currentRaceState);
 });
 
 // 2. Full manual state replace (Allows custom integrations or file push)
-app.post('/api/race/state', (req, res) => {
+app.post('/api/race/state', checkApiKey, (req, res) => {
   try {
     const newState = req.body as RaceState;
     if (newState && newState.eventName && Array.isArray(newState.riders) && Array.isArray(newState.heats)) {
@@ -307,14 +322,14 @@ app.post('/api/race/state', (req, res) => {
 });
 
 // 3. Reset to default Brazilian BMX simulation database
-app.post('/api/race/reset', (req, res) => {
+app.post('/api/race/reset', checkApiKey, (req, res) => {
   currentRaceState = JSON.parse(JSON.stringify(DEFAULT_RACE_STATE));
   saveState();
   res.json({ success: true, message: "Banco de dados redefinido para a simulação padrão." });
 });
 
 // 4. Update the active tracker/live status on track
-app.post('/api/race/update-live', (req, res) => {
+app.post('/api/race/update-live', checkApiKey, (req, res) => {
   const { activeHeatId, status, gateDroppedAt, finishResults } = req.body;
 
   if (activeHeatId !== undefined) {
@@ -342,7 +357,7 @@ app.post('/api/race/update-live', (req, res) => {
 });
 
 // 5. Submit live finish results & bind them directly back into the official heat rankings
-app.post('/api/race/submit-live-results', (req, res) => {
+app.post('/api/race/submit-live-results', checkApiKey, (req, res) => {
   const { heatId, results, winnerTime } = req.body as {
     heatId: string;
     winnerTime: string;
@@ -823,7 +838,7 @@ function fallbackParseBMXText(textContent: string, parseType: 'RIDERS' | 'RESULT
 
 // 6. Gemini-powered unstructured file parsing!
 // Process ugly raw outputs from local "SISTEMA BEM" text files or reports copy-pastas
-app.post('/api/race/upload-bem-text', async (req, res) => {
+app.post('/api/race/upload-bem-text', checkApiKey, async (req, res) => {
   const { textContent, parseType } = req.body;
 
   if (!textContent || !textContent.trim()) {

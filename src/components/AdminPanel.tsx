@@ -43,9 +43,15 @@ export default function AdminPanel({ raceState, onRefresh, selectedHeatId, onSel
   const [rawText, setRawText] = useState<string>('');
   const [isParsing, setIsParsing] = useState<boolean>(false);
   const [parseFeedback, setParseFeedback] = useState<{ success: boolean; msg: string } | null>(null);
+  const [localApiKey, setLocalApiKey] = useState<string>(() => localStorage.getItem('BEM_API_KEY') || '');
   
   const [copyingCurl, setCopyingCurl] = useState<boolean>(false);
   const [copyingPs, setCopyingPs] = useState<boolean>(false);
+
+  const handleApiKeyChange = (val: string) => {
+    setLocalApiKey(val);
+    localStorage.setItem('BEM_API_KEY', val);
+  };
 
   const selectedHeat = heats.find(h => h.id === selectedHeatId);
 
@@ -472,6 +478,105 @@ Invoke-RestMethod -Method Post -Uri "${hostUrl}/api/race/state" -Body $body -Con
         <p className="text-slate-300 text-xs mt-4 leading-relaxed">
           O <strong>SISTEMA BEM</strong> é a aplicação local que gerencia as súmulas de corrida e tempos das lombadas e portões. Abaixo, você tem duas formas de integrar este site aos resultados da pista: instantaneamente via <strong>Gemini AI (Digitado/Colado)</strong> ou programático via <strong>Chamadas de Webhook (Push API)</strong> no final de cada bateria.
         </p>
+      </div>
+
+      {/* Visual Link Sharing Box inside Admin Panel */}
+      <div className="bg-gradient-to-br from-[#101F30] to-[#0A1420] border-2 border-yellow-500/20 rounded-xl p-5 shadow-xl space-y-4">
+        <div className="flex items-center space-x-2 pb-2 border-b border-slate-800">
+          <span className="flex h-2.5 w-2.5 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
+          </span>
+          <h3 className="text-sm font-extrabold text-yellow-400 font-sans uppercase tracking-wider">
+            Links Oficiais de Transmissão / Divulgação
+          </h3>
+        </div>
+
+        <p className="text-xs text-slate-300 leading-relaxed font-sans">
+          Utilize estes links para que espectadores acompanhem os resultados ao vivo em tempo real pelas arquibancadas (smartphones/tablets/computadores), ou para outros operadores controlarem a cronometragem.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-slate-950 border border-slate-800 p-3 rounded-lg flex flex-col justify-between space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded font-mono uppercase">
+                Público (Apenas Visualização)
+              </span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.origin + window.location.pathname);
+                  alert("Link do Espectador copiado para a área de transferência!");
+                }}
+                className="text-[9px] bg-slate-850 text-slate-300 px-2.5 py-1 rounded font-bold hover:bg-slate-705 transition"
+              >
+                Copiar Link
+              </button>
+            </div>
+            <div className="text-xs font-mono text-slate-350 bg-slate-900 px-2 py-1.5 rounded truncate select-all">
+              {window.location.origin + window.location.pathname}
+            </div>
+            <p className="text-[10px] text-slate-500 font-mono">
+              Otimizado para celulares de atletas e público na arquibancada.
+            </p>
+          </div>
+
+          <div className="bg-slate-950 border border-slate-800 p-3 rounded-lg flex flex-col justify-between space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-red-400 bg-red-450/10 px-2 py-0.5 rounded font-mono uppercase">
+                Administrador (Modo Operador)
+              </span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.origin + window.location.pathname + "?admin=true");
+                  alert("Link do Administrador copiado para a área de transferência!");
+                }}
+                className="text-[9px] bg-slate-850 text-slate-300 px-2.5 py-1 rounded font-bold hover:bg-slate-705 transition"
+              >
+                Copiar Link
+              </button>
+            </div>
+            <div className="text-xs font-mono text-yellow-450 bg-slate-900 px-2 py-1.5 rounded truncate select-all">
+              {window.location.origin + window.location.pathname}?admin=true
+            </div>
+            <p className="text-[10px] text-slate-500 font-mono">
+              Permite lançar tempos, trocar baterias e redefinir o banco de dados.
+            </p>
+          </div>
+        </div>
+
+        {/* API Key management */}
+        <div className="pt-3 border-t border-slate-800/80">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-950 p-3 rounded-lg border border-slate-850">
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold text-slate-400 block font-mono">
+                Chave de API / Token de Segurança (Configurado no Render)
+              </label>
+              <p className="text-[10px] text-slate-500 font-sans leading-tight">
+                Se você definiu a variável <code className="text-yellow-500/80 font-mono">API_KEY</code> no Render, insira o valor abaixo para salvar no seu navegador e autenticar as operações do BEM.
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="password"
+                placeholder="Ex: brbmx2026..."
+                value={localApiKey}
+                onChange={(e) => handleApiKeyChange(e.target.value)}
+                className="bg-slate-900 border border-slate-800 rounded px-2.5 py-1 text-xs text-slate-200 outline-none focus:border-yellow-500/40 w-48 font-mono"
+              />
+              {localApiKey ? (
+                <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded border border-emerald-950 flex items-center space-x-1">
+                  <ShieldCheck className="h-3 w-3" />
+                  <span>Configurado</span>
+                </span>
+              ) : (
+                <span className="text-[10px] text-slate-400 font-bold bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                  Sem Chave
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
