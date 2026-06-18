@@ -57,7 +57,7 @@ Abra o arquivo em um editor e cole o script abaixo, ajustando as variáveis `$Fo
 # ----- CONFIGURAÇÃO -----
 $global:FolderToWatch = "C:\SISTEMA_BEM\Resultados"  # 📂 PASTA ONDE O BEM SALVA OS ARQUIVOS 
 $global:RenderUrl     = "https://resultados-ao-vivo-integracao-bem.onrender.com" # 🌐 SEU SITE NO RENDER
-$global:ApiKey        = "SUA_SENHA_AQUI"              # 🔐 CHAVE DE SEGURANÇA CONFIGURADA NO RENDER
+$global:ApiKey        = "BrAsiL_BMX_2026_SeCrEt_StAfF"              # 🔐 CHAVE DE SEGURANÇA CONFIGURADA NO RENDER
 
 # Testar se a pasta de destino existe, caso contrário criá-la
 if (!(Test-Path -Path $global:FolderToWatch)) {
