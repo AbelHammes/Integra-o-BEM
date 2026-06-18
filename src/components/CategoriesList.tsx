@@ -74,6 +74,20 @@ export default function CategoriesList({ raceState, onSelectHeat, selectedHeatId
   const [chartMode, setChartMode] = useState<'CUMULATIVE' | 'INDIVIDUAL'>('CUMULATIVE');
   const [showChart, setShowChart] = useState<boolean>(true);
 
+  if (categories.length === 0) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 py-10 text-center space-y-4 max-w-2xl mx-auto shadow-2xl" id="empty-categories-view">
+        <Layers className="h-10 w-10 text-emerald-400 mx-auto animate-pulse" />
+        <h3 className="text-base font-bold text-slate-100 font-sans uppercase tracking-wider">Aguardando dados do BEM</h3>
+        <p className="text-xs text-slate-350 leading-relaxed font-sans max-w-md mx-auto">
+          Nenhuma categoria ou piloto de bicicross importado. Para sincronizar as inscrições, baterias e resultados do campeonato,
+          use o <code className="text-yellow-450 bg-[#0B0F19] px-1.5 py-0.5 rounded font-mono text-[10.5px]">SincronizadorBEM.ps1</code> local ou
+          cole as informações textuais exportadas diretamente na aba <strong className="text-white">CONFIG BEM</strong>.
+        </p>
+      </div>
+    );
+  }
+
   // Filter riders by category and search query
   const filteredRiders = riders
     .filter(r => r.category === selectedCategory)

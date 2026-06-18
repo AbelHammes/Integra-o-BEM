@@ -18,6 +18,18 @@ export default function RiderSearch({ raceState, onSelectHeat }: RiderSearchProp
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
 
+  if (riders.length === 0) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 py-10 text-center space-y-4 max-w-2xl mx-auto shadow-2xl" id="empty-riders-view">
+        <Search className="h-10 w-10 text-emerald-400 mx-auto animate-pulse" />
+        <h3 className="text-base font-bold text-slate-100 font-sans uppercase tracking-wider">Busca de Pilotos</h3>
+        <p className="text-xs text-slate-350 leading-relaxed font-sans max-w-md mx-auto">
+          Nenhum piloto cadastrado no sistema atualmente. Os inscritos e resultados aparecerão assim que a transmissão do sistema BEM for recebida com sucesso.
+        </p>
+      </div>
+    );
+  }
+
   // Search filter
   const searchResults = searchTerm.trim() === '' 
     ? [] 

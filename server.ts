@@ -39,160 +39,15 @@ function getGemini(): GoogleGenAI {
 
 // Full, realistic INITIAL Mock database of Brazilian BMX (Bicicross) Championship
 const DEFAULT_RACE_STATE: RaceState = {
-  eventName: "Campeonato Brasileiro de BMX 2026",
-  location: "Cuiabá - MT",
-  date: "04 e 05 Julho de 2026",
-  categories: ["Elite Men", "Elite Women", "Junior Men", "Cruiser 30-39"],
-  riders: [
-    // Elite Men
-    { id: "em_1", name: "Renato Rezende", plate: "1", category: "Elite Men", club: "Curitiba BMX", points: [1, 1, 2], totalPoints: 4, rank: 1, status: "OK" },
-    { id: "em_2", name: "Bruno Cogo", plate: "22", category: "Elite Men", club: "Americana Bicicross", points: [2, 2, 1], totalPoints: 5, rank: 2, status: "OK" },
-    { id: "em_3", name: "Pedro Queiroz", plate: "45", category: "Elite Men", club: "Brusque BMX", points: [3, 4, 3], totalPoints: 10, rank: 3, status: "OK" },
-    { id: "em_4", name: "Franklin Vasconcelos", plate: "109", category: "Elite Men", club: "SJC Bicicross", points: [4, 3, 4], totalPoints: 11, rank: 4, status: "OK" },
-    { id: "em_5", name: "Guilherme Ribeiro", plate: "33", category: "Elite Men", club: "Sorocaba BMX Club", points: [5, 5, 5], totalPoints: 15, rank: 5, status: "OK" },
-    { id: "em_6", name: "Lucas Moresco", plate: "87", category: "Elite Men", club: "Jaraguá do Sul", points: [6, 6, 6], totalPoints: 18, rank: 6, status: "OK" },
-    { id: "em_7", name: "Gustavo Mesquita", plate: "50", category: "Elite Men", club: "Caraguatatuba", points: [7, 7, 7], totalPoints: 21, rank: 7, status: "OK" },
-    { id: "em_8", name: "Ariel João", plate: "78", category: "Elite Men", club: "Balneário Camboriú", points: [8, 8, 8], totalPoints: 24, rank: 8, status: "OK" },
-
-    // Elite Women
-    { id: "ew_1", name: "Priscilla Carnaval", plate: "31", category: "Elite Women", club: "Sorocaba BMX Club", points: [1, 2, 1], totalPoints: 4, rank: 1, status: "OK" },
-    { id: "ew_2", name: "Paola Reis", plate: "18", category: "Elite Women", club: "Salvador Bicicross", points: [2, 1, 2], totalPoints: 5, rank: 2, status: "OK" },
-    { id: "ew_3", name: "Maitê Naves", plate: "5", category: "Elite Women", club: "Uberlândia BMX", points: [3, 3, 3], totalPoints: 9, rank: 3, status: "OK" },
-    { id: "ew_4", name: "Letícia Martins", plate: "84", category: "Elite Women", club: "Betim Bicicross", points: [4, 4, 4], totalPoints: 12, rank: 4, status: "OK" },
-    { id: "ew_5", name: "Ana Sofia", plate: "99", category: "Elite Women", club: "Pomerode SC", points: [5, 5, 5], totalPoints: 15, rank: 5, status: "OK" },
-    { id: "ew_6", name: "Isabella Silveira", plate: "14", category: "Elite Women", club: "Joinville BMX", points: [6, 6, 6], totalPoints: 18, rank: 6, status: "OK" },
-
-    // Junior Men
-    { id: "jm_1", name: "Matheus Oliveira", plate: "210", category: "Junior Men", club: "Americana Bicicross", points: [1, 2, 1], totalPoints: 4, rank: 1, status: "OK" },
-    { id: "jm_2", name: "Victor de Andrade", plate: "144", category: "Junior Men", club: "Leme BMX", points: [2, 1, 2], totalPoints: 5, rank: 2, status: "OK" },
-    { id: "jm_3", name: "Kauê de Souza", plate: "112", category: "Junior Men", club: "Novo Hamburgo", points: [3, 3, 3], totalPoints: 9, rank: 3, status: "OK" },
-    { id: "jm_4", name: "Felipe Ramos", plate: "155", category: "Junior Men", club: "Poços de Caldas", points: [4, 4, 4], totalPoints: 12, rank: 4, status: "OK" },
-
-    // Cruiser 30-39
-    { id: "cr_1", name: "Douglas Silva", plate: "400", category: "Cruiser 30-39", club: "Londrina BMX", points: [1, 1, 1], totalPoints: 3, rank: 1, status: "OK" },
-    { id: "cr_2", name: "Alexandre Santos", plate: "323", category: "Cruiser 30-39", club: "Paulínia Racing", points: [2, 2, 2], totalPoints: 6, rank: 2, status: "OK" },
-    { id: "cr_3", name: "Marcelo Albuquerque", plate: "354", category: "Cruiser 30-39", club: "Indaiatuba", points: [3, 3, 3], totalPoints: 9, rank: 3, status: "OK" },
-    { id: "cr_4", name: "Rogerio de Lima", plate: "301", category: "Cruiser 30-39", club: "Caçapava BMX", points: [4, 4, 4], totalPoints: 12, rank: 4, status: "OK" }
-  ],
-  heats: [
-    // Heats for Elite Men - MOTO 1
-    {
-      id: "heat_em_m1",
-      heatNumber: 1,
-      category: "Elite Men",
-      round: "MOTO_1",
-      status: "FINISHED",
-      winnerTime: "31.954s",
-      finishedAt: "2026-06-12T09:12:00Z",
-      gateAssignments: [
-        { riderId: "em_1", riderName: "Renato Rezende", plate: "1", gate: 1, time: "31.954s", motoPoints: 1, finishPosition: 1 },
-        { riderId: "em_2", riderName: "Bruno Cogo", plate: "22", gate: 2, time: "32.124s", motoPoints: 2, finishPosition: 2 },
-        { riderId: "em_3", riderName: "Pedro Queiroz", plate: "45", gate: 3, time: "32.890s", motoPoints: 3, finishPosition: 3 },
-        { riderId: "em_4", riderName: "Franklin Vasconcelos", plate: "109", gate: 4, time: "33.210s", motoPoints: 4, finishPosition: 4 },
-        { riderId: "em_5", riderName: "Guilherme Ribeiro", plate: "33", gate: 5, time: "33.910s", motoPoints: 5, finishPosition: 5 },
-        { riderId: "em_6", riderName: "Lucas Moresco", plate: "87", gate: 6, time: "34.120s", motoPoints: 6, finishPosition: 6 },
-        { riderId: "em_7", riderName: "Gustavo Mesquita", plate: "50", gate: 7, time: "34.887s", motoPoints: 7, finishPosition: 7 },
-        { riderId: "em_8", riderName: "Ariel João", plate: "78", gate: 8, time: "35.250s", motoPoints: 8, finishPosition: 8 }
-      ]
-    },
-    // Heats for Elite Men - MOTO 2
-    {
-      id: "heat_em_m2",
-      heatNumber: 1,
-      category: "Elite Men",
-      round: "MOTO_2",
-      status: "FINISHED",
-      winnerTime: "31.840s",
-      finishedAt: "2026-06-12T09:44:00Z",
-      gateAssignments: [
-        { riderId: "em_1", riderName: "Renato Rezende", plate: "1", gate: 3, time: "31.840s", motoPoints: 1, finishPosition: 1 },
-        { riderId: "em_2", riderName: "Bruno Cogo", plate: "22", gate: 5, time: "32.010s", motoPoints: 2, finishPosition: 2 },
-        { riderId: "em_4", riderName: "Franklin Vasconcelos", plate: "109", gate: 2, time: "32.880s", motoPoints: 3, finishPosition: 3 },
-        { riderId: "em_3", riderName: "Pedro Queiroz", plate: "45", gate: 1, time: "33.150s", motoPoints: 4, finishPosition: 4 },
-        { riderId: "em_5", riderName: "Guilherme Ribeiro", plate: "33", gate: 4, time: "33.620s", motoPoints: 5, finishPosition: 5 },
-        { riderId: "em_6", riderName: "Lucas Moresco", plate: "87", gate: 8, time: "33.990s", motoPoints: 6, finishPosition: 6 },
-        { riderId: "em_7", riderName: "Gustavo Mesquita", plate: "50", gate: 6, time: "34.502s", motoPoints: 7, finishPosition: 7 },
-        { riderId: "em_8", riderName: "Ariel João", plate: "78", gate: 7, time: "35.340s", motoPoints: 8, finishPosition: 8 }
-      ]
-    },
-    // Heats for Elite Men - MOTO 3
-    {
-      id: "heat_em_m3",
-      heatNumber: 1,
-      category: "Elite Men",
-      round: "MOTO_3",
-      status: "FINISHED",
-      winnerTime: "31.620s",
-      finishedAt: "2026-06-12T10:15:00Z",
-      gateAssignments: [
-        { riderId: "em_2", riderName: "Bruno Cogo", plate: "22", gate: 6, time: "31.620s", motoPoints: 1, finishPosition: 1 },
-        { riderId: "em_1", riderName: "Renato Rezende", plate: "1", gate: 4, time: "31.902s", motoPoints: 2, finishPosition: 2 },
-        { riderId: "em_3", riderName: "Pedro Queiroz", plate: "45", gate: 7, time: "32.610s", motoPoints: 3, finishPosition: 3 },
-        { riderId: "em_4", riderName: "Franklin Vasconcelos", plate: "109", gate: 8, time: "32.950s", motoPoints: 4, finishPosition: 4 },
-        { riderId: "em_5", riderName: "Guilherme Ribeiro", plate: "33", gate: 2, time: "33.450s", motoPoints: 5, finishPosition: 5 },
-        { riderId: "em_6", riderName: "Lucas Moresco", plate: "87", gate: 1, time: "34.020s", motoPoints: 6, finishPosition: 6 },
-        { riderId: "em_7", riderName: "Gustavo Mesquita", plate: "50", gate: 3, time: "34.401s", motoPoints: 7, finishPosition: 7 },
-        { riderId: "em_8", riderName: "Ariel João", plate: "78", gate: 5, time: "35.100s", motoPoints: 8, finishPosition: 8 }
-      ]
-    },
-
-    // Upcoming Elite Men FINAL
-    {
-      id: "heat_em_final",
-      heatNumber: 1,
-      category: "Elite Men",
-      round: "FINAL",
-      status: "UPCOMING",
-      gateAssignments: [
-        { riderId: "em_1", riderName: "Renato Rezende", plate: "1", gate: 1 },
-        { riderId: "em_2", riderName: "Bruno Cogo", plate: "22", gate: 2 },
-        { riderId: "em_3", riderName: "Pedro Queiroz", plate: "45", gate: 3 },
-        { riderId: "em_4", riderName: "Franklin Vasconcelos", plate: "109", gate: 4 },
-        { riderId: "em_5", riderName: "Guilherme Ribeiro", plate: "33", gate: 5 },
-        { riderId: "em_6", riderName: "Lucas Moresco", plate: "87", gate: 6 },
-        { riderId: "em_7", riderName: "Gustavo Mesquita", plate: "50", gate: 7 },
-        { riderId: "em_8", riderName: "Ariel João", plate: "78", gate: 8 }
-      ]
-    },
-
-    // Elite Women - MOTO 1
-    {
-      id: "heat_ew_m1",
-      heatNumber: 1,
-      category: "Elite Women",
-      round: "MOTO_1",
-      status: "FINISHED",
-      winnerTime: "34.012s",
-      finishedAt: "2026-06-12T09:20:00Z",
-      gateAssignments: [
-        { riderId: "ew_1", riderName: "Priscilla Carnaval", plate: "31", gate: 1, time: "34.012s", motoPoints: 1, finishPosition: 1 },
-        { riderId: "ew_2", riderName: "Paola Reis", plate: "18", gate: 2, time: "34.520s", motoPoints: 2, finishPosition: 2 },
-        { riderId: "ew_3", riderName: "Maitê Naves", plate: "5", gate: 3, time: "35.811s", motoPoints: 3, finishPosition: 3 },
-        { riderId: "ew_4", riderName: "Letícia Martins", plate: "84", gate: 4, time: "36.250s", motoPoints: 4, finishPosition: 4 },
-        { riderId: "ew_5", riderName: "Ana Sofia", plate: "99", gate: 5, time: "38.102s", motoPoints: 5, finishPosition: 5 },
-        { riderId: "ew_6", riderName: "Isabella Silveira", plate: "14", gate: 6, time: "40.902s", motoPoints: 6, finishPosition: 6 }
-      ]
-    },
-    // Elite Women - MOTO 2 (Active/Live currently ready)
-    {
-      id: "heat_ew_m2",
-      heatNumber: 1,
-      category: "Elite Women",
-      round: "MOTO_2",
-      status: "UPCOMING",
-      gateAssignments: [
-        { riderId: "ew_2", riderName: "Paola Reis", plate: "18", gate: 4 },
-        { riderId: "ew_1", riderName: "Priscilla Carnaval", plate: "31", gate: 6 },
-        { riderId: "ew_3", riderName: "Maitê Naves", plate: "5", gate: 2 },
-        { riderId: "ew_4", riderName: "Letícia Martins", plate: "84", gate: 8 },
-        { riderId: "ew_5", riderName: "Ana Sofia", plate: "99", gate: 1 },
-        { riderId: "ew_6", riderName: "Isabella Silveira", plate: "14", gate: 3 }
-      ]
-    }
-  ],
+  eventName: "Sem Evento Ativo",
+  location: "Aguardando sincronização do BEM",
+  date: "",
+  categories: [],
+  riders: [],
+  heats: [],
   live: {
-    activeHeatId: "heat_ew_m2",
-    status: "GATE_READY",
+    activeHeatId: null,
+    status: "STANDBY",
     gateDroppedAt: null,
     finishResults: undefined
   }
@@ -206,6 +61,11 @@ if (fs.existsSync(STATE_FILE)) {
   try {
     currentRaceState = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
     console.log("State restored successfully from race_state.json");
+    if (currentRaceState.riders && currentRaceState.riders.some(r => r.id && (r.id.startsWith("em_") || r.id.startsWith("ew_") || r.id.startsWith("jm_")))) {
+      console.log("Mock data detected in restored state, resetting to empty slate as requested by operator.");
+      currentRaceState = { ...DEFAULT_RACE_STATE };
+      fs.writeFileSync(STATE_FILE, JSON.stringify(currentRaceState, null, 2), 'utf-8');
+    }
   } catch (err) {
     console.error("Error reading race_state.json, starting with default mock:", err);
   }

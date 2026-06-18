@@ -19,6 +19,7 @@ import {
   CircleAlert
 } from 'lucide-react';
 import { RaceState, Heat, Rider } from '../types';
+import { apiFetch } from '../api';
 
 interface LiveTrackerProps {
   raceState: RaceState;
@@ -56,7 +57,7 @@ export default function LiveTracker({ raceState, onRefresh, isAdminMode }: LiveT
     if (!activeHeat) return;
 
     // 1. Move gate state to READY
-    await fetch('/api/race/update-live', {
+    await apiFetch('/api/race/update-live', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'GATE_READY' })
@@ -66,7 +67,7 @@ export default function LiveTracker({ raceState, onRefresh, isAdminMode }: LiveT
     // Small delay before gate drops
     setTimeout(async () => {
       // 2. Drop gate -> ON_TRACK
-      await fetch('/api/race/update-live', {
+      await apiFetch('/api/race/update-live', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -144,7 +145,7 @@ export default function LiveTracker({ raceState, onRefresh, isAdminMode }: LiveT
     }));
 
     // Post final results back to the server
-    const res = await fetch('/api/race/submit-live-results', {
+    const res = await apiFetch('/api/race/submit-live-results', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -170,7 +171,7 @@ export default function LiveTracker({ raceState, onRefresh, isAdminMode }: LiveT
   };
 
   const resetLiveTracker = async () => {
-    await fetch('/api/race/update-live', {
+    await apiFetch('/api/race/update-live', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'STANDBY', activeHeatId: activeHeat?.id || null })

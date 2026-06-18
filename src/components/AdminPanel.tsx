@@ -27,6 +27,7 @@ import {
   FileText
 } from 'lucide-react';
 import { RaceState, Heat } from '../types';
+import { apiFetch } from '../api';
 
 interface AdminPanelProps {
   raceState: RaceState;
@@ -57,7 +58,7 @@ export default function AdminPanel({ raceState, onRefresh, selectedHeatId, onSel
 
   // Set active live heat on track
   const handleSetActiveLiveHeat = async (heatId: string) => {
-    const res = await fetch('/api/race/update-live', {
+    const res = await apiFetch('/api/race/update-live', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ activeHeatId: heatId, status: 'STANDBY' })
@@ -68,13 +69,13 @@ export default function AdminPanel({ raceState, onRefresh, selectedHeatId, onSel
     }
   };
 
-  // Reset database representation to default initial seed
+  // Reset database representation to default initial seed (now empty by design)
   const handleResetDatabase = async () => {
-    if (window.confirm("Deseja realmente redefinir o banco de dados para os pilotos simulados originais do GP Brasil? Isso apagará dados importados.")) {
-      const res = await fetch('/api/race/reset', { method: 'POST' });
+    if (window.confirm("Deseja limpar todo o banco de dados de pilotos e resultados para iniciar uma nova cronometragem do BEM zerada? Isso apagará todas as categorias atuais.")) {
+      const res = await apiFetch('/api/race/reset', { method: 'POST' });
       if (res.ok) {
         onRefresh();
-        alert("Banco de dados redefinido!");
+        alert("Banco de dados redefinido e limpo!");
       }
     }
   };
@@ -90,7 +91,7 @@ export default function AdminPanel({ raceState, onRefresh, selectedHeatId, onSel
     setParseFeedback(null);
 
     try {
-      const res = await fetch('/api/race/upload-bem-text', {
+      const res = await apiFetch('/api/race/upload-bem-text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -469,7 +470,7 @@ Invoke-RestMethod -Method Post -Uri "${hostUrl}/api/race/state" -Body $body -Con
               id="admin-reset-db-btn"
             >
               <RefreshCcw className="h-3.5 w-3.5" />
-              <span>Redefinir Banco Simulação</span>
+              <span>Zerar / Limpar Banco</span>
             </button>
           </div>
         </div>

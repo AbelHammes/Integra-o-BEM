@@ -26,6 +26,7 @@ import LiveTracker from './components/LiveTracker';
 import CategoriesList from './components/CategoriesList';
 import RiderSearch from './components/RiderSearch';
 import AdminPanel from './components/AdminPanel';
+import { apiFetch } from './api';
 
 function CopyLinkButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -55,45 +56,19 @@ export default function App() {
   const [isMobileLiveTrackerCollapsed, setIsMobileLiveTrackerCollapsed] = useState<boolean>(true);
   const [showShareLinks, setShowShareLinks] = useState<boolean>(false);
 
-  // Parse URL query parameters to check if loaded with "?admin=true" or "?admin=1" & install fetch key interceptor
+  // Parse URL query parameters to check if loaded with "?admin=true" or "?admin=1"
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('admin') === 'true' || params.get('admin') === '1') {
       setIsAdminMode(true);
     }
-
-    // Intercept fetch calls globally to inject x-api-key if available in localStorage
-    const originalFetch = window.fetch;
-    window.fetch = async function (input, init) {
-      const key = localStorage.getItem('BEM_API_KEY') || '';
-      if (key) {
-        if (!init) {
-          init = { headers: {} };
-        } else if (!init.headers) {
-          init.headers = {};
-        }
-
-        if (init.headers instanceof Headers) {
-          init.headers.set('x-api-key', key);
-        } else if (Array.isArray(init.headers)) {
-          init.headers.push(['x-api-key', key]);
-        } else {
-          (init.headers as any)['x-api-key'] = key;
-        }
-      }
-      return originalFetch(input, init);
-    };
-
-    return () => {
-      window.fetch = originalFetch;
-    };
   }, []);
 
   // Core API poll function
   const fetchRaceState = async (silent = false) => {
     if (!silent) setIsPollLoading(true);
     try {
-      const res = await fetch('/api/race/state');
+      const res = await apiFetch('/api/race/state');
       if (res.ok) {
         const data = (await res.json()) as RaceState;
         setRaceState(data);
