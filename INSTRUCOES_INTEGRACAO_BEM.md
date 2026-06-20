@@ -42,11 +42,11 @@ Escolha o método compatível com o seu sistema operacional de cronometragem (ge
 
 O PowerShell já vem instalado nativamente em qualquer computador Windows.
 
-1. No seu computador local, certifique-se de que a pasta onde o SISTEMA BEM salva seus arquivos de resultados está correta (no seu caso: `C:\sistema_Bem\resultados`).
+1. No seu computador local, certifique-se de que a pasta onde o SISTEMA BEM salva seus arquivos de resultados está correta (no seu caso: `C:\SISTEMA_BEM\Resultados`).
 2. No Windows, abra o menu iniciar, digite **PowerShell** e clique nele para abrir.
 3. Crie um arquivo chamado `SincronizadorBEM.ps1` salvando o bloco abaixo como um arquivo com extensão `.ps1` (ou use no Bloco de Notas).
 
-Abra o arquivo em um editor e cole o script abaixo, ajustando as variáveis se necessário (o script abaixo já foi otimizado com a sua pasta de resultados e o endereço do seu servidor atual!):
+Abra o arquivo em um editor e cole o script abaixo, ajustando as variáveis se necessário (o script abaixo já foi otimizado com a sua pasta de resultados e o endereço correto do seu servidor no Render!):
 
 ```powershell
 # ==============================================================================
@@ -54,9 +54,14 @@ Abra o arquivo em um editor e cole o script abaixo, ajustando as variáveis se n
 # ==============================================================================
 # Monitora e sincroniza automaticamente arquivos locais do SISTEMA BEM com o servidor BMX Live.
 
+# ----- CORREÇÃO DE CONEXÃO E SEGURANÇA (MUITO IMPORTANTE) -----
+# Força o PowerShell do Windows a usar criptografia segura TLS 1.2 para conectar no Render
+# Sem essa linha, ocorrem os erros de "Conexão fechada inesperadamente" ou "Canal seguro SSL/TLS"
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+
 # ----- CONFIGURAÇÃO -----
-$global:FolderToWatch = "C:\sistema_Bem\resultados"  # 📂 PASTA ONDE O BEM SALVA OS RESULTADOS (De acordo com seu setup)
-$global:RenderUrl     = "https://ais-pre-kabwaxibyxfihoinbvjcyo-796974278805.us-east1.run.app" # 🌐 SITE ATUAL DA WEB APP
+$global:FolderToWatch = "C:\SISTEMA_BEM\Resultados"  # 📂 PASTA ONDE O BEM SALVA OS RESULTADOS (De acordo com seu setup)
+$global:RenderUrl     = "https://resultados-ao-vivo-integracao-bem.onrender.com" # 🌐 SITE ATUAL NO RENDER
 $global:ApiKey        = "SUA_SENHA_AQUI"              # 🔐 CHAVE DE SEGURANÇA CONFIGURADA NO RENDER (se ativa)
 
 # Testar se a pasta de destino existe, caso contrário criá-la
@@ -66,7 +71,7 @@ if (!(Test-Path -Path $global:FolderToWatch)) {
 }
 
 # --- FUNÇÃO PRINCIPAL DE ENVIAR ARQUIVO NOVO OU EXISTENTE ---
-function Sync-BemFile {
+function global:Sync-BemFile {
     param([string]$path)
     if (!(Test-Path $path)) { return }
     $name = Split-Path $path -Leaf
@@ -74,13 +79,28 @@ function Sync-BemFile {
     # Ignorar arquivos temporários ocultos ou vazios
     if ($name -match 'tmp|~\$|^\.') { return }
     
-    # Pequena pausa para garantir que o SISTEMA BEM terminou de escrever totalmente o arquivo
-    Start-Sleep -Milliseconds 450
+    # Pequena pausa e sistema de retentativa para ler arquivos se estiverem bloqueados pelo BEM
+    $content = $null
+    $retryCount = 0
+    while ($null -eq $content -and $retryCount -lt 5) {
+        try {
+            # Se for PowerShell antigo ou em português, tenta ler com UTF8 sem levantar erro de trava de escrita
+            $content = Get-Content -Raw -Path $path -Encoding UTF8 -ErrorAction Stop
+        }
+        catch {
+            $retryCount++
+            Start-Sleep -Milliseconds 300
+        }
+    }
+    
+    if ($null -eq $content -or [string]::IsNullOrWhiteSpace($content)) {
+        # Tenta uma leitura secundária simples sem encoding específico se falhar
+        try { $content = Get-Content -Raw -Path $path -ErrorAction SilentlyContinue } catch {}
+    }
+
+    if ([string]::IsNullOrWhiteSpace($content)) { return }
     
     try {
-        $content = Get-Content -Raw -Path $path -Encoding UTF8
-        if ([string]::IsNullOrWhiteSpace($content)) { return }
-        
         Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Arquivo detectado: $name. Enviando para o BMX Live..." -ForegroundColor Yellow
         
         # Detecta se é arquivo de inscritos ou resultados
@@ -122,19 +142,38 @@ Write-Host " Servidor BMX Live destino: $global:RenderUrl" -ForegroundColor Yell
 Write-Host "======================================================================" -ForegroundColor Yellow
 
 # ----- SINCRONIZAÇÃO INICIAL DE ARQUIVOS QUE JÁ EXISTEM NA PASTA -----
-Write-Host "Realizando varredura inicial para sincronizar arquivos que já estão na pasta..." -ForegroundColor Yellow
-$arquivosExistentes = Get-ChildItem -Path $global:FolderToWatch -File -Include *.txt, *.html, *.htm
-if ($arquivosExistentes.Count -eq 0 -or $arquivosExistentes -eq $null) {
-    # Tenta puxar todos se não filtrar por extensão
-    $arquivosExistentes = Get-ChildItem -Path $global:FolderToWatch -File
+Write-Host "Realizando varredura inicial em: $global:FolderToWatch..." -ForegroundColor Yellow
+
+# Busca todos os arquivos de dados locais (.txt, .html, .htm) recursivamente
+$arquivosFiltrados = Get-ChildItem -Path $global:FolderToWatch -File -Recurse | Where-Object {
+    $_.Extension -match '^\.(txt|html|htm)$'
 }
 
-if ($arquivosExistentes -ne $null) {
+$totalAchados = 0
+if ($null -ne $arquivosFiltrados) {
+    if ($arquivosFiltrados -isnot [array]) {
+        $arquivosFiltrados = @($arquivosFiltrados)
+    }
+    $totalAchados = $arquivosFiltrados.Count
+}
+
+Write-Host "Total de arquivos de resultados encontrados na sua pasta local: $totalAchados" -ForegroundColor Cyan
+
+if ($totalAchados -gt 0) {
+    # Para evitar estourar o servidor ou cota de inteligência com centenas de arquivos antigos (ex: 316 arquivos),
+    # nós organizamos pela data de modificação e sincronizamos apenas os 10 arquivos mais RECENTES!
+    Write-Host "Sincronizando os 10 arquivos de resultados mais recentes..." -ForegroundColor Yellow
+    $arquivosExistentes = $arquivosFiltrados | Sort-Object LastWriteTime -Descending | Select-Object -First 10
+    
     ForEach ($file in $arquivosExistentes) {
         Sync-BemFile -path $file.FullName
+        Start-Sleep -Milliseconds 400 # Pequena pausa de segurança para evitar sobrecarga do servidor
     }
+} else {
+    Write-Host "Nenhum arquivo .txt, .html ou .htm foi localizado na pasta. Certifique-se de que o BEM está salvando relatórios lá!" -ForegroundColor Gray
 }
-Write-Host "Sincronização inicial de arquivos existentes concluída!" -ForegroundColor Green
+
+Write-Host "Sincronização inicial concluída!" -ForegroundColor Green
 Write-Host "Iniciando monitoramento em tempo real de novas atualizações. Pressione [Ctrl+C] para parar." -ForegroundColor Gray
 Write-Host "----------------------------------------------------------------------" -ForegroundColor Yellow
 
