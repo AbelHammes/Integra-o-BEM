@@ -778,10 +778,11 @@ app.post('/api/race/upload-bem-text', checkApiKey, async (req, res) => {
 
   // Detect HTML BEM report and run fast local HTML parser
   const lowerText = textContent.toLowerCase();
-  if (lowerText.includes('<table') || lowerText.includes('bmx event manager') || lowerText.includes('gridtable')) {
+  const isHtml = lowerText.includes('<table') || lowerText.includes('bmx event manager') || lowerText.includes('gridtable') || lowerText.includes('</html>') || lowerText.includes('<html');
+  if (isHtml) {
     try {
       const parsedFullState = parseBemHtml(textContent);
-      if (parsedFullState && parsedFullState.categories.length > 0) {
+      if (parsedFullState && (parsedFullState.categories.length > 0 || parsedFullState.riders.length > 0)) {
         // Enforce high-fidelity sync of the race state!
         currentRaceState = {
           eventName: parsedFullState.eventName,
@@ -799,10 +800,16 @@ app.post('/api/race/upload-bem-text', checkApiKey, async (req, res) => {
           message: `Relatório exportado do BEM integrado com sucesso online! Carregado: "${parsedFullState.eventName}", ${parsedFullState.categories.length} categoria(s), ${parsedFullState.riders.length} piloto(s) e suas baterias/finais ranqueadas!`,
           data: currentRaceState
         });
+      } else {
+        return res.status(422).json({
+          error: "Não conseguimos extrair nenhuma tabela ou dados válidos de pilotos e baterias deste HTML local do SISTEMA BEM. Por favor, verifique se selecionou o arquivo de exportação correto."
+        });
       }
     } catch (parseHtmlErr: any) {
       console.error("Failed to parse native BEM HTML export locally:", parseHtmlErr);
-      // Let it fall back to standard text parses if any
+      return res.status(400).json({
+        error: "Erro de decodificação do HTML local do SISTEMA BEM: " + parseHtmlErr.message
+      });
     }
   }
 

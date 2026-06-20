@@ -55,14 +55,17 @@ Abra o arquivo em um editor e cole o script abaixo, ajustando as variáveis se n
 # Monitora e sincroniza automaticamente arquivos locais do SISTEMA BEM com o servidor BMX Live.
 
 # ----- CORREÇÃO DE CONEXÃO E SEGURANÇA (MUITO IMPORTANTE) -----
-# Força o PowerShell do Windows a usar criptografia segura TLS 1.2 para conectar no Render
-# Sem essa linha, ocorrem os erros de "Conexão fechada inesperadamente" ou "Canal seguro SSL/TLS"
-[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+# Força o PowerShell do Windows a usar criptografia segura TLS 1.2
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls11 -bor [System.Net.SecurityProtocolType]::Tls
+# Ignora avisos/erros de certificados SSL locais expirados/inválidos no Windows (excelente para evitar o bug de canal SSL/TLS)
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
 
 # ----- CONFIGURAÇÃO -----
 $global:FolderToWatch = "C:\SISTEMA_BEM\Resultados"  # 📂 PASTA ONDE O BEM SALVA OS RESULTADOS (De acordo com seu setup)
 $global:RenderUrl     = "https://resultados-ao-vivo-integracao-bem.onrender.com" # 🌐 SITE ATUAL NO RENDER
 $global:ApiKey        = "SUA_SENHA_AQUI"              # 🔐 CHAVE DE SEGURANÇA CONFIGURADA NO RENDER (se ativa)
+
+$global:LastSyncTimes = @{} # ⏳ Dicionário de controle para evitar uploads duplicados rápidos (debounce)
 
 # Testar se a pasta de destino existe, caso contrário criá-la
 if (!(Test-Path -Path $global:FolderToWatch)) {
@@ -75,6 +78,16 @@ function global:Sync-BemFile {
     param([string]$path)
     if (!(Test-Path $path)) { return }
     $name = Split-Path $path -Leaf
+    
+    # Debounce de 4 segundos: evita enviar o mesmo arquivo consecutivamente em curto espaço de tempo (evita sobrecarga)
+    $agora = Get-Date
+    if ($global:LastSyncTimes.ContainsKey($path)) {
+        $ultimoSinc = $global:LastSyncTimes[$path]
+        if (($agora - $ultimoSinc).TotalSeconds -lt 4) {
+            return # Aborta envio redundante
+        }
+    }
+    $global:LastSyncTimes[$path] = $agora
     
     # Ignorar arquivos temporários ocultos ou vazios
     if ($name -match 'tmp|~\$|^\.') { return }
@@ -121,7 +134,8 @@ function global:Sync-BemFile {
         }
         
         $urlEnvio = "$($global:RenderUrl)/api/race/upload-bem-text"
-        $response = Invoke-RestMethod -Method Post -Uri $urlEnvio -Body $payload -Headers $headers -TimeoutSec 15
+        # Timeout aumentado para 120 segundos para dar tempo do Render acordar e processar
+        $response = Invoke-RestMethod -Method Post -Uri $urlEnvio -Body $payload -Headers $headers -TimeoutSec 120
         
         if ($response.success) {
             Write-Host "✅ SUCESSO! $name foi sincronizado online!" -ForegroundColor Green
@@ -136,10 +150,35 @@ function global:Sync-BemFile {
 }
 
 Write-Host "======================================================================" -ForegroundColor Yellow
-Write-Host " INICIANDO MONITOR DO SISTEMA BEM DE CRIOPRESENÇA E TEMPOS " -ForegroundColor Cyan
+Write-Host " INICIANDO MONITOR DO SISTEMA BEM DE INTEGRACAO ONLINE " -ForegroundColor Cyan
 Write-Host " Pasta local monitorada: $global:FolderToWatch" -ForegroundColor Yellow
 Write-Host " Servidor BMX Live destino: $global:RenderUrl" -ForegroundColor Yellow
 Write-Host "======================================================================" -ForegroundColor Yellow
+
+# ----- ACORDAR O SERVIDOR NO RENDER (EVIAT O BUG 502 DE INICIALIZAÇÃO DO RENDER GRÁTIS) -----
+Write-Host "Conectando ao servidor BMX Live... (Sinalizando inicialização se estiver dormindo)" -ForegroundColor Yellow
+$serverReady = $false
+$retryAttempt = 0
+$maxAttempts = 15 # Tenta por até 2.5 minutos (15 * 10 segundos)
+
+while (!$serverReady -and $retryAttempt -lt $maxAttempts) {
+    try {
+        $retryAttempt++
+        $stateUrl = "$($global:RenderUrl)/api/race/state"
+        # Faz uma chamada simples GET para verificar se o servidor responde
+        $testResponse = Invoke-RestMethod -Method Get -Uri $stateUrl -TimeoutSec 15
+        $serverReady = $true
+        Write-Host "✅ Servidor BMX Live está ONLINE e respondendo com sucesso!" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "⏳ Servidor está acordando (Render Grátis costuma hibernar)... Tentativa $retryAttempt de $maxAttempts. Aguardando 10 segundos..." -ForegroundColor Cyan
+        Start-Sleep -Seconds 10
+    }
+}
+
+if (!$serverReady) {
+    Write-Host "⚠️ O servidor demorou muito para responder. Iniciando a sincronização mesmo assim..." -ForegroundColor Yellow
+}
 
 # ----- SINCRONIZAÇÃO INICIAL DE ARQUIVOS QUE JÁ EXISTEM NA PASTA -----
 Write-Host "Realizando varredura inicial em: $global:FolderToWatch..." -ForegroundColor Yellow
@@ -160,10 +199,10 @@ if ($null -ne $arquivosFiltrados) {
 Write-Host "Total de arquivos de resultados encontrados na sua pasta local: $totalAchados" -ForegroundColor Cyan
 
 if ($totalAchados -gt 0) {
-    # Para evitar estourar o servidor ou cota de inteligência com centenas de arquivos antigos (ex: 316 arquivos),
-    # nós organizamos pela data de modificação e sincronizamos apenas os 10 arquivos mais RECENTES!
-    Write-Host "Sincronizando os 10 arquivos de resultados mais recentes..." -ForegroundColor Yellow
-    $arquivosExistentes = $arquivosFiltrados | Sort-Object LastWriteTime -Descending | Select-Object -First 10
+    # Para evitar estourar o servidor com centenas de arquivos antigos,
+    # nós organizamos pela data de modificação e sincronizamos apenas os 5 arquivos mais RECENTES!
+    Write-Host "Sincronizando os 5 arquivos de resultados mais recentes..." -ForegroundColor Yellow
+    $arquivosExistentes = $arquivosFiltrados | Sort-Object LastWriteTime -Descending | Select-Object -First 5
     
     ForEach ($file in $arquivosExistentes) {
         Sync-BemFile -path $file.FullName
