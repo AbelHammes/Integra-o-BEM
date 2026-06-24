@@ -1,22 +1,25 @@
-import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-import {defineConfig} from 'vite';
-
-export default defineConfig(() => {
-  return {
-    plugins: [react(), tailwindcss()],
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
-      },
-    },
-    server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
-    },
-  };
-});
+{
+  "event": {
+    "eventName": "Campeonato Brasileiro de BMX 2026",
+    "eventSponsor": "Confederação Brasileira de Ciclismo (CBC)",
+    "eventLocation": "Cuiabá / MT - Pista de BMX Cuiabá",
+    "reportCreated": "Aguardando sincronização",
+    "reportType": "Aguardando Sincronização do BEM",
+    "categories": []
+  },
+  "schedule": [],
+  "notifications": [
+    {
+      "id": "init",
+      "timestamp": "23/06/2026, 17:00:00",
+      "title": "Sistema Inicializado",
+      "message": "O sistema está pronto e aguardando a sincronização de arquivos do software BEM para carregar as categorias, atletas e baterias.",
+      "severity": "info"
+    }
+  ],
+  "syncStatus": {
+    "lastSync": "Nunca sincronizado",
+    "status": "disconnected",
+    "filesSyncedCount": 0
+  }
+}
