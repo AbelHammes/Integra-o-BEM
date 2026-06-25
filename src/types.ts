@@ -1,61 +1,84 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-export type RaceRound = 'MOTO_1' | 'MOTO_2' | 'MOTO_3' | 'SEMI' | 'FINAL';
-
-export interface Rider {
-  id: string;
-  name: string;
-  plate: string; // Número da Placa
-  category: string; // Categoria (ex: Elite Men, Cruiser 30-34)
-  club: string; // Clube/Cidade
-  points: number[]; // Pontos em cada bateria classificatória (motos)
-  totalPoints: number; // Soma dos pontos das motos (menor é melhor)
-  rank: number; // Posição atual ou final
-  status: 'OK' | 'DNS' | 'DNF' | 'DSQ';
-}
-
-export interface GateAssignment {
-  riderId: string;
-  riderName: string;
+export interface Athlete {
   plate: string;
-  gate: number; // Gaiola/Raia (1-8)
-  time?: string; // Tempo final (ex: "32.450")
-  motoPoints?: number; // Pontificados nesta rodada (1-8)
-  finishPosition?: number; // Posição de chegada (1-8)
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  club: string;
+  state: string;
+  country: string;
+  uciId: string;
+  sponsor?: string;
+  transponder?: string;
+  place?: string; // Final/current standing place
+  points?: number; // Total points
+  m1Place?: string;
+  m1Time?: string;
+  m1Reaction?: string;
+  m2Place?: string;
+  m2Time?: string;
+  m2Reaction?: string;
+  m3Place?: string;
+  m3Time?: string;
+  m3Reaction?: string;
+  m1Draw?: string; // e.g. "10: 3" -> Race 10, Lane 3
+  m2Draw?: string;
+  m3Draw?: string;
+  group?: string; // e.g. "57"
+  transfer?: string; // e.g. "S13"
 }
 
-export interface Heat {
+export interface CategoryData {
+  categoryName: string;
+  entriesCount: number;
+  transferText?: string;
+  sponsor?: string;
+  athletes: Athlete[];
+}
+
+export interface EventData {
+  eventName: string;
+  eventSponsor: string;
+  eventLocation: string;
+  reportCreated: string;
+  reportType: string;
+  categories: CategoryData[];
+}
+
+export interface ScheduleEvent {
   id: string;
-  heatNumber: number; // Bateria 1, Bateria 2...
+  time: string;
+  title: string;
   category: string;
-  round: RaceRound;
-  gateAssignments: GateAssignment[];
-  status: 'UPCOMING' | 'GATES_FULL' | 'RACING' | 'FINISHED';
-  winnerTime?: string;
-  finishedAt?: string;
+  status: 'pending' | 'ongoing' | 'completed' | 'delayed';
+  details?: string;
 }
 
-export interface LiveState {
-  activeHeatId: string | null;
-  status: 'STANDBY' | 'GATE_READY' | 'ON_TRACK' | 'FINISHED';
-  gateDroppedAt?: string | null;
-  finishResults?: {
-    riderId: string;
-    gate: number;
-    position: number;
-    time: string;
-  }[];
+export interface ScheduleNotification {
+  id: string;
+  timestamp: string;
+  title: string;
+  message: string;
+  severity: 'info' | 'warning' | 'alert';
+  read?: boolean;
+}
+
+export interface SyncStatus {
+  lastSync: string | null;
+  status: 'connected' | 'offline';
+  filesSyncedCount: number;
 }
 
 export interface RaceState {
-  eventName: string;
-  location: string;
-  date: string;
-  categories: string[];
-  riders: Rider[];
-  heats: Heat[];
-  live: LiveState;
+  event: EventData;
+  schedule: ScheduleEvent[];
+  notifications: ScheduleNotification[];
+  syncStatus: SyncStatus;
+}
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  role: 'admin' | 'pilot' | 'viewer';
+  pilotPlate?: string; // If role is pilot, links to their plate
+  pilotName?: string;
 }
